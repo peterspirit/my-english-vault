@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#173f35">
+<title>My English Vault</title>
+<style>
+body {
+  margin: 0;
+  padding: 20px;
+  background: #f7f6f0;
+  color: #18231f;
+  font-family: -apple-system, sans-serif;
+}
+header {
+  background: #173f35;
+  color: white;
+  padding: 24px;
+  border-radius: 20px;
+}
+h1 { font-size: 25px; }
+.card {
+  background: white;
+  padding: 20px;
+  margin-top: 18px;
+  border-radius: 16px;
+}
+input, textarea, select, button {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 13px;
+  margin-top: 10px;
+  border-radius: 10px;
+  font-size: 16px;
+}
+input, textarea, select {
+  border: 1px solid #ccc;
+  background: white;
+}
+button {
+  border: 0;
+  background: #173f35;
+  color: white;
+  font-weight: bold;
+}
+.word {
+  border-bottom: 1px solid #ddd;
+  padding: 12px 0;
+}
+.small { color: #68766f; font-size: 13px; }
+</style>
+</head>
+<body>
+<header>
+  <div>🇦🇺 YOUR PERSONAL VOCABULARY</div>
+  <h1>My English Vault</h1>
+  <div>Collect it. Review it. Remember it.</div>
+</header>
+
+<div class="card">
+  <h2>📥 添加新表达</h2>
+  <input id="word" placeholder="英文单词或俚语">
+  <input id="meaning" placeholder="中文意思">
+  <textarea id="example" placeholder="英文例句（可选）"></textarea>
+  <select id="category">
+    <option>Australian Slang</option>
+    <option>Daily English</option>
+    <option>Business English</option>
+    <option>Real Estate</option>
+    <option>Phrasal Verbs</option>
+    <option>Idioms</option>
+    <option>Advanced Vocabulary</option>
+  </select>
+  <button onclick="addWord()">＋ 保存到词库</button>
+  <p class="small">词库保存在当前浏览器中。</p>
+</div>
+
+<div class="card">
+  <h2>📚 我的词库</h2>
+  <input id="search" placeholder="搜索单词..." oninput="renderWords()">
+  <div id="list"></div>
+  <button onclick="reviewWords()">🧠 开始复习</button>
+  <div id="review"></div>
+</div>
+
+<script>
+let words = [];
+
+try {
+  words = JSON.parse(localStorage.getItem("englishVault") || "[]");
+} catch(e) {
+  words = [];
+}
+
+function save() {
+  localStorage.setItem("englishVault", JSON.stringify(words));
+}
+
+function addWord() {
+  const term = document.getElementById("word").value.trim();
+  const meaning = document.getElementById("meaning").value.trim();
+  const example = document.getElementById("example").value.trim();
+  const category = document.getElementById("category").value;
+
+  if (!term) {
+    alert("请先输入英文单词或表达！");
+    return;
+  }
+
+  words.unshift({
+    term, meaning, example, category,
+    created: Date.now()
+  });
+
+  save();
+  document.getElementById("word").value = "";
+  document.getElementById("meaning").value = "";
+  document.getElementById("example").value = "";
+  renderWords();
+  alert("保存成功！");
+}
+
+function renderWords() {
+  const q = document.getElementById("search").value.toLowerCase();
+  const list = document.getElementById("list");
+
+  const filtered = words.filter(w =>
+    (w.term + " " + w.meaning + " " + w.category)
+      .toLowerCase().includes(q)
+  );
+
+  list.innerHTML = "";
+
+  if (!filtered.length) {
+    list.textContent = "还没有词汇，添加你的第一个表达吧！";
+    return;
+  }
+
+  filtered.forEach((w, i) => {
+    const item = document.createElement("div");
+    item.className = "word";
+
+    const title = document.createElement("strong");
+    title.textContent = w.term;
+
+    const meaning = document.createElement("div");
+    meaning.textContent = w.meaning || "尚未填写中文意思";
+
+    const example = document.createElement("div");
+    example.className = "small";
+    example.textContent = w.example || "";
+
+    const category = document.createElement("div");
+    category.className = "small";
+    category.textContent = w.category;
+
+    const del = document.createElement("button");
+    del.textContent = "删除";
+    del.onclick = () => {
+      if (confirm("确定删除这个词条吗？")) {
+        words.splice(words.indexOf(w), 1);
+        save();
+        renderWords();
+      }
+    };
+
+    item.append(title, meaning, example, category, del);
+    list.appendChild(item);
+  });
+}
+
+function reviewWords() {
+  const box = document.getElementById("review");
+
+  if (!words.length) {
+    box.textContent = "请先添加一些单词，再开始复习。";
+    return;
+  }
+
+  let i = 0;
+
+  function showCard() {
+    if (i >= words.length) {
+      box.textContent = "🎉 这一轮复习完成！";
+      return;
+    }
+
+    const w = words[i];
+    box.innerHTML = "";
+
+    const term = document.createElement("h3");
+    term.textContent = w.term;
+
+    const reveal = document.createElement("button");
+    reveal.textContent = "查看答案";
+
+    reveal.onclick = () => {
+      const answer = document.createElement("p");
+      answer.textContent = w.meaning || "尚未填写中文意思";
+      const next = document.createElement("button");
+      next.textContent = "下一个 →";
+      next.onclick = () => {
+        i++;
+        showCard();
+      };
+      box.replaceChildren(term, answer, next);
+    };
+
+    box.append(term, reveal);
+  }
+
+  showCard();
+}
+
+renderWords();
+</script>
+</body>
+</html>
